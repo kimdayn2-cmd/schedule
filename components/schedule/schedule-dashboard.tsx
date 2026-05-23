@@ -75,7 +75,9 @@ export function ScheduleDashboard({ initialData }: ScheduleDashboardProps) {
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      const res = await fetch("/api/schedule")
+      const res = await fetch(`/api/schedule?_=${Date.now()}`, {
+        cache: "no-store",
+      })
       if (res.ok) {
         const json = (await res.json()) as SchedulePayload
         setData(json)

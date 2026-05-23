@@ -4,7 +4,11 @@ import { getStats } from "./queries"
 import { getSampleEvents } from "./sample-data"
 import type { SchedulePayload } from "./types"
 
-const REVALIDATE_SECONDS = 300
+/** Google 게시 CSV·CDN 캐시 우회용 쿼리 추가 */
+function withCacheBuster(url: string): string {
+  const separator = url.includes("?") ? "&" : "?"
+  return `${url}${separator}_=${Date.now()}`
+}
 
 export async function fetchScheduleData(): Promise<SchedulePayload> {
   const csvUrl = process.env.GOOGLE_SHEET_CSV_URL?.trim()
@@ -22,10 +26,13 @@ export async function fetchScheduleData(): Promise<SchedulePayload> {
   }
 
   try {
-    const response = await fetch(csvUrl, {
-      headers: { Accept: "text/csv; charset=utf-8" },
-      next: { revalidate: REVALIDATE_SECONDS },
-    } as RequestInit & { next?: { revalidate: number } })
+    const response = await fetch(withCacheBuster(csvUrl), {
+      cache: "no-store",
+      headers: {
+        Accept: "text/csv; charset=utf-8",
+        "Cache-Control": "no-cache",
+      },
+    })
 
     if (!response.ok) {
       throw new Error(`CSV 요청 실패 (${response.status})`)
